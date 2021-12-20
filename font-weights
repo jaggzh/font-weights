@@ -1,0 +1,90 @@
+#!/usr/bin/perl
+#!/usr/bin/perl -d
+use strict;
+use warnings;
+use 5.24.1;
+
+# $ convert -list font
+  # Font: Z003-Medium-Italic
+  #   family: Z003
+  #   style: Italic
+  #   stretch: Normal
+  #   weight: 500
+  #   glyphs: /usr/share/fonts/type1/urw-base35/Z003-MediumItalic.t1
+  # Font: Z003-MediumItalic
+  #   family: Z003
+  #   style: Italic
+  #   stretch: Normal
+  #   weight: 500
+  #   glyphs: /usr/share/fonts/opentype/urw-base35/Z003-MediumItalic.otf
+
+my $showcnt=2;
+
+my $fstr = `convert -list font`;
+my @fonts = split(/^ *Font: /m, $fstr);
+say STDERR "Total fonts found: ", $#fonts+1;
+#my @names = @fonts;
+
+# Keep only specific fonts (ttf for now)
+my @keep = grep { /glyphs: .*\.ttf$/sm } @fonts;
+# print join("//", @keep); exit;
+say STDERR "Total fonts kept (ttf): ", $#keep+1;
+my @names = @keep;
+map { s/\n.*//s; $_; } @names;
+say STDERR "Total font names found: ", $#names+1;
+say STDERR "Some names:";
+for (my $i=0; $i<$showcnt; $i++) { say STDERR " [$i] $names[$i]"; }
+# my @files = @fonts;
+# my @files = @keep;
+my @files = @keep;
+map { s/^.* glyphs: (.*?)//sm; s/\s+$//; $_; } @files;
+say STDERR "Some files:";
+for (my $i=0; $i<$showcnt; $i++) {
+	say STDERR " [$i] Name: $names[$i]";
+	#say STDERR "      Keep: $keep[$i]";
+	say STDERR "      File: $files[$i]";
+}
+
+
+#`convert -background white -fill black -font "$names[0]" -size 400x100 -gravity center 'caption:ABCDEFGabcdefg' TIFF:- | display -`;
+#`convert -font "$names[0]" -depth 1 -size 400x100 -gravity center 'caption:ABCDEFGabcdefg' TIFF:- | display -`;
+#exit;
+#my $imgdata=`convert -background white -fill black -font "$names[0]" -size 400x100 -gravity center 'caption:ABCDEFGabcdefg' TIFF:-`;
+
+for my $i (0 .. $#names-1) {
+	my $imgdata;
+	$imgdata=`convert -depth 1 -font "$names[$i]" -size 400x100 -gravity center 'caption:ABCDEFGabcdefg' PNM:-`;
+	#say STDERR "convert -background white -fill black -depth 1 -font '$names[0]' -size 400x100 -gravity center 'caption:ABCDEFGabcdefg' TIFF:-";
+	# exit;;
+	use Imager;
+	my $img = Imager->new;
+	#say STDERR "$imgdata";
+	if (!$img->read(data => $imgdata, type => "pnm")) {
+		warn "Error reading image from convert: $!";
+		next;
+	}
+	my $height = $img->getheight();
+	my $width = $img->getwidth();
+	my $area = $height * $width;
+	say STDERR "$names[$i] - $files[$i]";
+	say STDERR "   Width: $width, Height: $height";
+	say STDERR "   Channels:     ", $img->getchannels();
+	say STDERR "   Bits/Channel: ", $img->bits();
+	my $blacks=0;
+	for my $i (0 .. $height-1) {
+		my @line = $img->getscanline(y=>$i);
+		# say STDERR "[$i] ", $#line+1;
+		for my $x (0 .. $#line-1) {
+			my $color;
+			$color = $line[$x];
+			# $DB::single = 1;
+			my ($r,$g,$b,$a) = $color->rgba();
+			# print "$r ";
+			$blacks++ if $r < 127;
+		}
+		# say STDERR '';
+	}
+	say STDERR "   Black/area perc ", 100 * $blacks / $area;
+	printf "%03f %s\n", ($blacks/$area)*100, $files[$i];
+	
+}
