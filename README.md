@@ -1,10 +1,11 @@
 ## Scan through Linux fonts and examine weights
 
 Usage:
-`
+
+```bash
 $ ./font-weights >list.txt
 $ sort -n list.txt >sorted.txt
-`
+```
 
 ## Explanation
 This uses imagemagick's `convert -list font` to get a list
@@ -18,6 +19,7 @@ largest size that'll fit in the 400x100 image.)
 
 ## Improvements
 
+1. Options: Could add options so you don't need to change the coding to specify stuff.  (Like right now it searches for TTFs only, and every other potential option.)
 1. I used "convert" to generate the text image, then later
 switched to coding this in perl, but still call "convert".
 It could probably be made faster doing the text in perl.
