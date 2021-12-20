@@ -1,10 +1,11 @@
 ## Scan through Linux fonts and examine weights
 
 Usage:
-`
+
+```bash
 $ ./font-weights >list.txt
 $ sort -n list.txt >sorted.txt
-`
+```
 
 ## Explanation
 This uses imagemagick's `convert -list font` to get a list
